@@ -689,13 +689,9 @@
   <script>
     // ===== CONFIG =====
     const CONFIG = {
-      APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbz80lyTgOFEunwcngYAQCyUG8tkNvmSBBHs9oxWrmWlmIgoZ_svKQBByObNaCDIY0_Z/exec",
+      APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyy8PXNCcicTR7Q0LXEZuSYTxLNJONQ2BpKsQpEgiltGo0WLjxBxXO1anqrJHJjd3Hu/exec",
       CLOUDINARY_CLOUD_NAME: "dq7jcelhx",
-      CLOUDINARY_UPLOAD_PRESET: "ml_default",
-      OPENROUTER_KEY: "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",
-      OPENROUTER_MODEL: "meta-llama/llama-4-maverick:free",
-      GROQ_KEY: "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",
-      GROQ_MODEL: "llama-3.1-8b-instant"
+      CLOUDINARY_UPLOAD_PRESET: "ml_default"
     };
 
     const AI_SYSTEM_PROMPT = `You are an AI Safety Officer assistant for PT. Alliance Consumer Products Indonesia, a manufacturing company. Your role is to help workers identify workplace hazards, suggest corrective and preventive actions, and explain safety procedures and regulations. You are knowledgeable about Indonesian workplace safety standards (K3 - Keselamatan dan Kesehatan Kerja) and international safety standards. Always respond in English by default. Only switch to Bahasa Indonesia if the user writes to you in Bahasa Indonesia first. Be concise, practical, and professional. Always prioritize worker safety. Keep answers short and actionable.`;
@@ -1320,7 +1316,19 @@
     }
 
     // ===== AI CHAT =====
-    function openAiModal() { document.getElementById('aiOverlay').classList.add('active'); }
+    // ===== AI CHAT =====
+    function openAiModal() {
+      document.getElementById('aiOverlay').classList.add('active');
+      const msgs = document.getElementById('aiMessages');
+      if (msgs && msgs.children.length === 0) {
+        const openCount = appDataState.length;
+        const critical  = appDataState.filter(r => (r.risk||'').toUpperCase() === 'CRITICAL').length;
+        let greeting = '\u{1F44B} Hi! I\'m your AI Safety Officer.\n\nI can see the live observation data \u2014 currently ' + openCount + ' open issue' + (openCount !== 1 ? 's' : '');
+        if (critical > 0) greeting += ' (' + critical + ' CRITICAL \u26A0\uFE0F)';
+        greeting += '.\n\nAsk me anything \u2014 "what are the biggest risks?", "summarize open issues", or any safety question.';
+        appendAiMsg(greeting, 'ai');
+      }
+    }
     function closeAiModal(e) { if (e.target === document.getElementById('aiOverlay')) closeAiDirect(); }
     function closeAiDirect() { document.getElementById('aiOverlay').classList.remove('active'); }
 
@@ -1334,59 +1342,27 @@
       const thinkEl = appendAiMsg('Thinking...', 'thinking');
       document.getElementById('aiModelLabel').textContent = 'Connecting...';
 
-      const messages = [
-        { role: 'system', content: AI_SYSTEM_PROMPT },
-        ...aiChatHistory
-      ];
-
-      let reply = null;
-      let usedModel = '';
-
-      // Try OpenRouter first with 3s timeout
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
           method: 'POST',
-          signal: controller.signal,
-          headers: {
-            'Content-Type': 'text/plain',
-            'Authorization': `Bearer ${CONFIG.OPENROUTER_KEY}`,
-            'HTTP-Referer': 'https://sbohi.app',
-            'X-Title': 'SBO HI Safety App'
-          },
-          body: JSON.stringify({ model: CONFIG.OPENROUTER_MODEL, messages, max_tokens: 500 })
+          body: JSON.stringify({
+            action: 'aiChat',
+            messages: aiChatHistory
+          })
         });
-        clearTimeout(timeout);
         const data = await res.json();
-        reply = data.choices?.[0]?.message?.content;
-        if (reply) usedModel = 'OpenRouter';
-      } catch(e) { /* fallthrough */ }
-
-      // Fallback to Groq
-      if (!reply) {
-        try {
-          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/plain',
-              'Authorization': `Bearer ${CONFIG.GROQ_KEY}`
-            },
-            body: JSON.stringify({ model: CONFIG.GROQ_MODEL, messages, max_tokens: 500 })
-          });
-          const data = await res.json();
-          reply = data.choices?.[0]?.message?.content;
-          if (reply) usedModel = 'Groq';
-        } catch(e) { /* nothing */ }
-      }
-
-      thinkEl.remove();
-      if (reply) {
-        aiChatHistory.push({ role: 'assistant', content: reply });
-        appendAiMsg(reply, 'ai');
-        document.getElementById('aiModelLabel').textContent = usedModel;
-      } else {
-        appendAiMsg('Sorry, I could not connect to the AI. Please try again.', 'ai');
+        thinkEl.remove();
+        if (data.status === 'ok' && data.reply) {
+          aiChatHistory.push({ role: 'assistant', content: data.reply });
+          appendAiMsg(data.reply, 'ai');
+          document.getElementById('aiModelLabel').textContent = data.model || 'AI';
+        } else {
+          appendAiMsg('Sorry, AI is unavailable right now. Please try again.', 'ai');
+          document.getElementById('aiModelLabel').textContent = 'Offline';
+        }
+      } catch(e) {
+        thinkEl.remove();
+        appendAiMsg('Sorry, could not connect. Please check your connection.', 'ai');
         document.getElementById('aiModelLabel').textContent = 'Offline';
       }
     }
