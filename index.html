@@ -259,9 +259,9 @@
   .chat-input-bar .text-input { flex:1; padding:11px 14px; border-radius:999px; }
   .chat-send { width:40px; height:40px; border-radius:50%; background:var(--purple); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .chat-send:active { transform:scale(0.88); }
-  #aiModal { position:fixed; inset:0; display:flex; flex-direction:column; background:var(--bg); z-index:30; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.22,1,0.36,1); border-radius:0; max-height:100dvh; overflow:hidden; }
-  #aiModal.show { transform:translateY(0); bottom:auto; }
-  #aiModal .chat-area { flex:1; min-height:0; }
+  #aiModal { position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; background:var(--bg); z-index:100; transform:translateY(100%); transition:transform 0.4s cubic-bezier(0.22,1,0.36,1); border-radius:0; overflow:hidden; }
+  #aiModal.show { transform:translateY(0); }
+  #aiModal .chat-area { flex:1; min-height:0; overflow-y:auto; }
 
   /* ============ PHOTO SOURCE MODAL ============ */
   .center-modal-wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:24px; z-index:100; opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
@@ -506,7 +506,7 @@
 </div>
 
 <!-- ============ AI CHAT MODAL ============ -->
-<div class="sheet fullscreen" id="aiModal">
+<div id="aiModal">
   <div class="sheet-header ai-header">
     <span style="width:40px"></span>
     <span class="sh-title">SBO AI</span>
