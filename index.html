@@ -647,6 +647,18 @@
    SBO HI — UI skin: concept.html | Questions: old.html
    ============================================================= */
 
+/* ── PASSWORD HASHING (Web Crypto, no backend changes needed) ─
+   Apps Script just stores/compares whatever string it receives,
+   so hashing here means the Sheet only ever sees the hash —
+   never the real password. ──────────────────────────────────── */
+async function hashPassword(password, salt) {
+  const enc = new TextEncoder();
+  const data = enc.encode(password + "::" + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyI6OoY0yIbiv54rjKiR4XxXbBDtWubevF18-HLzljaP0j4cNlDNoUfbkzaZ2mlL599/exec";
 const CLOUDINARY_CLOUD  = "ducpxsehd";
 const CLOUDINARY_PRESET = "ml_default";
@@ -847,7 +859,7 @@ function startPrefetch(user) {
   _prefetchFixedPromise = fetch(SCRIPT_URL + "?action=fixed").then(r => r.json()).catch(() => null);
 }
 
-function doLogin() {
+async function doLogin() {
   const user = document.getElementById("loginUser").value.trim();
   const pass = document.getElementById("loginPass").value;
   const errEl = document.getElementById("loginError");
@@ -859,17 +871,20 @@ function doLogin() {
     ? "Menyiapkan workspace kamu…" : "Getting your workspace ready…";
   document.getElementById("welcomeSplash").classList.remove("hidden","fade-out");
 
+  // Hash before it ever leaves the device — Apps Script/Sheet only ever sees this hash.
+  const hashedPass = await hashPassword(pass, user.toLowerCase());
+
   fetch(SCRIPT_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ action: "login", user, pass })
+    body: JSON.stringify({ action: "login", user, pass: hashedPass })
   })
   .then(r => r.json())
   .then(data => {
     if (data.status === "ok") {
       currentUser = data.user || user;
       isAdmin = !!data.isAdmin;
-      sessionAdminPass = isAdmin ? pass : "";
+      sessionAdminPass = isAdmin ? hashedPass : "";
       startPrefetch(currentUser);
       onLoginSuccess();
     } else {
