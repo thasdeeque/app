@@ -712,6 +712,27 @@ html.reduce-animations .splash-letter {
 .video-loader { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:1; }
 .video-loader .spinner { width:32px; height:32px; border:3px solid rgba(255,255,255,0.2); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; }
 
+/* Branded loading fallback — shown when video can't play */
+.video-fallback-screen {
+  position:absolute; inset:0; z-index:2;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+  background:#0f0f0f;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.4s ease;
+}
+.video-fallback-screen.visible { opacity:1; pointer-events:auto; }
+.vf-logo { width:72px; height:72px; border-radius:18px; background:rgba(41,121,255,0.15);
+  border:1px solid rgba(41,121,255,0.3); display:flex; align-items:center; justify-content:center;
+  font-size:28px; font-weight:900; color:#2979ff; letter-spacing:-1px;
+  box-shadow:0 0 32px rgba(41,121,255,0.2); }
+.vf-title { font-size:20px; font-weight:800; color:#fff; letter-spacing:0.5px; }
+.vf-sub { font-size:12px; color:rgba(255,255,255,0.4); text-align:center; max-width:200px; line-height:1.5; }
+.vf-spinner { width:28px; height:28px; border:3px solid rgba(255,255,255,0.12); border-top-color:#2979ff; border-radius:50%; animation:spin 0.8s linear infinite; }
+.vf-bar-wrap { width:160px; height:3px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden; }
+.vf-bar { height:100%; width:0%; background:linear-gradient(90deg,#2979ff,#8b5cf6); border-radius:99px;
+  animation:vfBarFill 2.2s cubic-bezier(0.4,0,0.2,1) forwards; }
+@keyframes vfBarFill { 0%{width:0%;} 70%{width:85%;} 100%{width:100%;} }
+
 /* CARD SPECULAR LIGHT REMOVED */
 
 /* MOTION PROMPT REMOVED */
@@ -745,10 +766,18 @@ html.reduce-animations .splash-letter {
 <div class="video-intro hidden" id="videoIntro">
   <div class="video-loader" id="videoLoader"><div class="spinner"></div></div>
   <video id="introVideo" playsinline webkit-playsinline preload="auto" muted></video>
+  <!-- Fallback loading screen shown when video can't play -->
+  <div class="video-fallback-screen" id="videoFallback">
+    <div class="vf-logo">SBO</div>
+    <div class="vf-title">SBO HI</div>
+    <div class="vf-sub">PT. Alliance Consumer Products Indonesia</div>
+    <div class="vf-spinner"></div>
+    <div class="vf-bar-wrap"><div class="vf-bar" id="vfBar"></div></div>
+  </div>
 </div>
 
 <!-- ============ LOGIN ============ -->
-<div id="loginScreen">
+<div id="loginScreen" class="hidden">
   <div class="login-bg-shapes"><span></span><span></span><span></span></div>
   <div class="login-lang">
     <div class="lang-toggle" data-lang="en" id="loginLangToggle" role="switch" aria-label="Language">
@@ -2404,61 +2433,76 @@ let videoPreloadedFixed = null;
 function initVideoIntro() {
   const videoIntro = document.getElementById('videoIntro');
   const introVideo = document.getElementById('introVideo');
-  if (!videoIntro || !introVideo) return;
+  if (!videoIntro || !introVideo) { document.getElementById('loginScreen').classList.remove('hidden'); return; }
 
-  // Detect device type — screen short-side is the most reliable signal for tablets
-  const ua = navigator.userAgent;
-  const shortSide = Math.min(window.screen.width, window.screen.height);
-  const hasTouch = navigator.maxTouchPoints > 0;
-  const isTablet = /iPad/i.test(ua) ||
-                   (hasTouch && /Macintosh/i.test(ua)) ||
-                   (/Android/i.test(ua) && shortSide >= 600) ||
-                   (hasTouch && shortSide >= 600 && !/iPhone|iPod/i.test(ua));
-  const isMobile = !isTablet && (/iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && shortSide < 600));
-
-  // Assign correct video per device
-  if (isMobile)      introVideo.src = 'vid.mp4';
-  else if (isTablet) introVideo.src = 'vid-tab.mp4';
-  else               introVideo.src = 'vid-lap.mp4';
-
+  // Single video file for all devices — avoids missing vid-tab.mp4 / vid-lap.mp4
+  introVideo.src = 'vid.mp4';
   introVideo.load();
   videoIntro.classList.remove('hidden');
 
-  // Start prefetching backend data during video
+  // Start prefetching backend data during intro
   videoPreloadedEveryone = fetch(SCRIPT_URL).then(r => r.json()).catch(() => null);
   videoPreloadedFixed = fetch(SCRIPT_URL + "?action=fixed").then(r => r.json()).catch(() => null);
 
-  const loader = document.getElementById('videoLoader');
+  const loader   = document.getElementById('videoLoader');
+  const fallback = document.getElementById('videoFallback');
+  let   introDone = false;
+
+  function showLoginScreen() {
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
 
   function skipVideo() {
+    if (introDone) return;
+    introDone = true;
     videoIntro.classList.add('fade-out');
-    setTimeout(() => { videoIntro.classList.add('hidden'); videoIntro.classList.remove('fade-out'); }, 700);
+    setTimeout(() => {
+      videoIntro.classList.add('hidden');
+      videoIntro.classList.remove('fade-out');
+      showLoginScreen();
+    }, 700);
+  }
+
+  // Switch to branded loading fallback (no jump, smooth crossfade)
+  function showFallback(duration) {
+    if (introDone) return;
+    if (loader)   loader.style.display = 'none';
+    introVideo.style.display = 'none';
+    if (fallback) fallback.classList.add('visible');
+    // Restart the progress bar animation fresh
+    const bar = document.getElementById('vfBar');
+    if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
+    setTimeout(skipVideo, duration);
   }
 
   function tryPlay() {
     const p = introVideo.play();
     if (p !== undefined) {
       p.then(() => {
+        // Playing fine — hide the spinner loader
         if (loader) loader.style.display = 'none';
+        // Clear the 5s no-play timeout since video is going
+        clearTimeout(noPlayTimer);
       }).catch(() => {
-        // Autoplay blocked — wait for any tap/click then retry
-        if (loader) loader.style.display = 'flex';
-        const retry = () => {
-          document.removeEventListener('touchstart', retry);
-          document.removeEventListener('click', retry);
-          tryPlay();
-        };
-        document.addEventListener('touchstart', retry, { once: true });
-        document.addEventListener('click', retry, { once: true });
+        // Autoplay blocked or failed — go straight to loading screen
+        clearTimeout(noPlayTimer);
+        showFallback(2500);
       });
     }
   }
 
   introVideo.addEventListener('playing', () => {
     if (loader) loader.style.display = 'none';
+    clearTimeout(noPlayTimer);
   });
 
   introVideo.addEventListener('ended', skipVideo);
+
+  introVideo.addEventListener('error', () => {
+    // Video file missing or codec issue — show loading screen
+    clearTimeout(noPlayTimer);
+    showFallback(2500);
+  });
 
   introVideo.addEventListener('canplay', () => {
     tryPlay();
@@ -2470,8 +2514,15 @@ function initVideoIntro() {
     tryPlay();
   }
 
-  // Hard failsafe: skip after 30s max
-  setTimeout(() => { if (!videoIntro.classList.contains('hidden')) skipVideo(); }, 30000);
+  // If video hasn't started playing within 5s, switch to loading screen
+  const noPlayTimer = setTimeout(() => {
+    if (!introDone && (introVideo.paused || introVideo.readyState < 2)) {
+      showFallback(2500);
+    }
+  }, 5000);
+
+  // Absolute hard failsafe
+  setTimeout(() => { if (!introDone) skipVideo(); }, 15000);
 }
 
 initVideoIntro();
