@@ -1188,19 +1188,26 @@ function resetAllCardTilts() {} // kept as stub (called by animToggle)
 function initGyroscope() {}
 function initMouseParallax() {}
 
-/* ── LOW-END DEVICE AUTO-DETECT ──────────────────────────── */
+/* ── LOW-END DEVICE AUTO-DETECT ────────────────────────────
+   NOTE: We intentionally do NOT disable the glass effect (effectsEnabled)
+   on Android. backdrop-filter is GPU-accelerated on modern Chrome and is
+   essentially free; disabling it caused iOS↔Android visual asymmetry
+   because navigator.deviceMemory is undefined on iOS (always passes the
+   guard) but defined on Android (often fails the guard). Now we only
+   throttle animations on genuinely low-end devices, and the existing
+   `@supports not (backdrop-filter:blur(1px))` block handles truly
+   incapable browsers. This keeps iOS and Android visually identical. */
 (function autoDetectLowEnd() {
   const cores = navigator.hardwareConcurrency || 4;
-  const mem   = navigator.deviceMemory || 4;
-  if (cores <= 4 || mem <= 2) {
+  const mem   = navigator.deviceMemory || 4;   // undefined on iOS → 4
+  // Use AND (not OR) and a stricter threshold so flagship/mid-range
+  // Android phones aren't misclassified as low-end.
+  if (cores <= 2 && mem <= 2) {
     animationsEnabled = false;
-    effectsEnabled    = false;
     const animTog = document.getElementById('animToggle');
-    const effTog  = document.getElementById('effectsToggle');
     if (animTog) animTog.checked = false;
-    if (effTog)  effTog.checked  = false;
     updateAnimationsState();
-    updateEffectsState();
+    // effectsEnabled stays true → frosted glass renders on every device.
   }
 })();
 
