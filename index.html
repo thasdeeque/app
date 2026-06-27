@@ -283,34 +283,35 @@ html.light .topbar.scrolled { background:rgba(245,245,245,0.85); }
   box-sizing:border-box;
   will-change:transform;
 }
-/* True pill: radius = half the bar height (stadium shape). Flat fill,
-   floating shadow gives the lifted look without any blur cost. */
-/* Light mode: dark pill — charcoal glass */
+/* True pill: radius = half the bar height (stadium shape). Translucent
+   frosted-glass fill with heavy backdrop blur so content behind shows
+   through as a diffused haze. Floating shadow gives the lifted look. */
+/* Light mode: dark frosted glass — charcoal haze */
 .bottom-nav::before {
   content:'';
   position:absolute;
   inset:0;
-  background:rgba(18,18,20,0.78);
+  background:rgba(18,18,20,0.55);
   border-radius:999px;
-  backdrop-filter:blur(4px) saturate(1.6);
-  -webkit-backdrop-filter:blur(4px) saturate(1.6);
+  backdrop-filter:blur(28px) saturate(1.8) brightness(1.05);
+  -webkit-backdrop-filter:blur(28px) saturate(1.8) brightness(1.05);
   box-shadow:
-    0 1.5px 0 rgba(255,255,255,0.18) inset,
+    0 1.5px 0 rgba(255,255,255,0.22) inset,
     0 -1px 0 rgba(0,0,0,0.5) inset,
-    inset 0 0 0 1px rgba(255,255,255,0.08),
+    inset 0 0 0 1px rgba(255,255,255,0.14),
     0 18px 56px rgba(0,0,0,0.45),
     0 6px 16px rgba(0,0,0,0.3);
-  transition:background 0.35s ease;
+  transition:background 0.35s ease, backdrop-filter 0.35s ease;
 }
-/* Dark mode: bright pill — luminous white glass */
+/* Dark mode: luminous frosted glass — translucent white haze over dark bg */
 html:not(.light) .bottom-nav::before {
-  background:rgba(255,255,255,0.78);
-  backdrop-filter:blur(4px) saturate(2.0) brightness(1.25);
-  -webkit-backdrop-filter:blur(4px) saturate(2.0) brightness(1.25);
+  background:rgba(255,255,255,0.32);
+  backdrop-filter:blur(28px) saturate(1.9) brightness(1.12);
+  -webkit-backdrop-filter:blur(28px) saturate(1.9) brightness(1.12);
   box-shadow:
-    0 1.5px 0 rgba(255,255,255,1) inset,
-    0 -1px 0 rgba(0,0,0,0.10) inset,
-    inset 0 0 0 1px rgba(255,255,255,0.4),
+    0 1.5px 0 rgba(255,255,255,0.38) inset,
+    0 -1px 0 rgba(0,0,0,0.18) inset,
+    inset 0 0 0 1px rgba(255,255,255,0.22),
     0 18px 56px rgba(0,0,0,0.5),
     0 6px 16px rgba(0,0,0,0.28);
 }
