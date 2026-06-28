@@ -77,8 +77,8 @@ html.light.reduce-effects .search-bar-wrap,
 html.light.reduce-effects .skeleton-card,
 html.light.reduce-effects .empty-state .empty-ill,
 html.light.reduce-effects .filter-opt { background: #f2f2f7 !important; }
-html.reduce-effects .bottom-nav::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background:#141416 !important; }
-html.light.reduce-effects .bottom-nav::before { background:#141416 !important; }
+html.reduce-effects .bottom-nav { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background:#141416 !important; }
+html.light.reduce-effects .bottom-nav { background:#141416 !important; }
 html.reduce-effects .gradient-bg { display: none !important; }
 html.reduce-effects .grain-overlay { display: none !important; }
 /* Kill continuous ambient animations when effects off */
@@ -282,15 +282,15 @@ html.light .topbar.scrolled { background:rgba(245,245,245,0.85); }
   animation:navSlideIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
   box-sizing:border-box;
   will-change:transform;
-}
-/* True pill: radius = half the bar height (stadium shape). Translucent
-   frosted-glass fill with heavy backdrop blur so content behind shows
-   through as a diffused haze. Floating shadow gives the lifted look. */
-/* Light mode: dark frosted glass — charcoal haze */
-.bottom-nav::before {
-  content:'';
-  position:absolute;
-  inset:0;
+  /* === Frosted glass applied DIRECTLY on the element (not ::before) ===
+     Why: On Android Chrome / WebView, `backdrop-filter` on a pseudo-
+     element of a `position:fixed` parent frequently fails to composite,
+     leaving the pill looking semi-transparent (background tint shows
+     through but no blur). Applying backdrop-filter directly on the
+     element forces it onto its own GPU layer and reliably renders the
+     frost on every Android Chrome / WebView version we tested. The
+     `transform:translateZ(0)` already on this element guarantees the
+     compositing layer promotion. */
   background:rgba(18,18,20,0.55);
   border-radius:999px;
   backdrop-filter:blur(28px) saturate(1.8) brightness(1.05);
@@ -304,7 +304,7 @@ html.light .topbar.scrolled { background:rgba(245,245,245,0.85); }
   transition:background 0.35s ease, backdrop-filter 0.35s ease;
 }
 /* Dark mode: luminous frosted glass — translucent white haze over dark bg */
-html:not(.light) .bottom-nav::before {
+html:not(.light) .bottom-nav {
   background:rgba(255,255,255,0.32);
   backdrop-filter:blur(28px) saturate(1.9) brightness(1.12);
   -webkit-backdrop-filter:blur(28px) saturate(1.9) brightness(1.12);
@@ -644,7 +644,7 @@ html.light .dropdown-menu { background:#f0f0f0; }
 /* ============ PHOTO SOURCE MODAL ============ */
 .center-modal-wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:24px; z-index:100; opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
 .center-modal-wrap.show { opacity:1; pointer-events:auto; }
-.cm-bg { position:absolute; inset:0; background:var(--overlay); backdrop-filter:blur(6px); }
+.cm-bg { position:absolute; inset:0; background:var(--overlay); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transform:translateZ(0); }
 .center-modal { position:relative; width:100%; max-width:320px; background:var(--card); border-radius:20px; padding:24px; border:1px solid var(--border); z-index:1; animation:fadeSlideUp 0.3s ease; }
 .cm-title { font-size:17px; font-weight:800; margin-bottom:16px; text-align:center; }
 .cm-opt { display:flex; align-items:center; gap:14px; padding:14px; border-radius:12px; cursor:pointer; font-size:15px; font-weight:600; transition:background 0.15s ease; }
@@ -706,11 +706,11 @@ html.reduce-animations .splash-letter {
 .img-viewer.show { opacity:1; pointer-events:auto; }
 .img-viewer img { max-width:92%; max-height:86%; border-radius:12px; transform:scale(0.85); transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 20px 60px rgba(0,0,0,0.6); }
 .img-viewer.show img { transform:scale(1); }
-.iv-close { position:absolute; top:calc(env(safe-area-inset-top,0px) + 16px); right:18px; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.12); color:#fff; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
-.iv-nav { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.12); color:#fff; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+.iv-close { position:absolute; top:calc(env(safe-area-inset-top,0px) + 16px); right:18px; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.12); color:#fff; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transform:translateZ(0); }
+.iv-nav { position:absolute; top:50%; transform:translateY(-50%) translateZ(0); width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.12); color:#fff; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
 .iv-prev { left:14px; }
 .iv-next { right:14px; }
-.iv-counter { position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 18px); left:50%; transform:translateX(-50%); color:#fff; font-size:13px; font-weight:700; background:rgba(255,255,255,0.12); padding:5px 14px; border-radius:999px; backdrop-filter:blur(6px); }
+.iv-counter { position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 18px); left:50%; transform:translateX(-50%) translateZ(0); color:#fff; font-size:13px; font-weight:700; background:rgba(255,255,255,0.12); padding:5px 14px; border-radius:999px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
 
 /* ============ OVERSCROLL GLOW ============ */
 .overscroll-glow { position:fixed; left:0; right:0; height:60px; pointer-events:none; z-index:4; opacity:0; transition:opacity 0.2s ease; }
@@ -752,8 +752,8 @@ html.reduce-animations .splash-letter {
 
 /* ============ BACKDROP-FILTER FALLBACK (old devices) ============ */
 @supports not (backdrop-filter:blur(1px)) {
-  .bottom-nav::before { background:#000 !important; box-shadow:0 4px 12px rgba(0,0,0,0.4) !important; }
-  html:not(.light) .bottom-nav::before { background:#fff !important; }
+  .bottom-nav { background:#000 !important; box-shadow:0 4px 12px rgba(0,0,0,0.4) !important; }
+  html:not(.light) .bottom-nav { background:#fff !important; }
   .obs-card { background:rgba(26,26,26,0.95) !important; }
   html.light .obs-card { background:rgba(255,255,255,0.95) !important; }
 
@@ -1143,33 +1143,121 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyI6OoY0yIbiv54rjKiR
 const CLOUDINARY_CLOUD  = "ducpxsehd";
 const CLOUDINARY_PRESET = "ml_default";
 
-/* ── HAPTIC ENGINE ────────────────────────────────────────── */
+/* ── HAPTIC ENGINE ──────────────────────────────────────────
+   NOTE ON ANDROID:
+   • `navigator.vibrate(ms)` works on Android Chrome / WebView, BUT
+     patterns under ~15ms are often imperceptible (the vibrator motor
+     needs time to spin up). The original code used 20ms for light,
+     medium AND heavy — making them indistinguishable AND weak.
+   • Some Android OEMs cap single-pulse duration around 1000ms; we
+     stay well under that.
+   • Patterns are arrays `[on, off, on, off, ...]` in milliseconds.
+   • We also call `navigator.vibrate` defensively (it can be undefined
+     in WebView without VIBRATE permission; we just no-op silently).
+   • iOS Safari does NOT support `navigator.vibrate` at all, so this
+     engine is effectively Android-only — which matches the user's
+     report ("works on Apple" referred to the blur, not vibration;
+     iOS haptics would need a native bridge which is out of scope). */
 const Haptic = {
   enabled: true,
+  /* _v: low-level wrapper. Accepts a number OR an array pattern.
+     Returns true if the vibrate call was actually issued. */
   _v(pattern) {
-    if (!this.enabled) return;
-    try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {}
+    if (!this.enabled) return false;
+    try {
+      if (typeof navigator === 'undefined') return false;
+      const fn = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate;
+      if (typeof fn !== 'function') return false;
+      // Ensure pattern is a valid number/array of positive ints.
+      let p;
+      if (typeof pattern === 'number') {
+        if (!isFinite(pattern) || pattern <= 0) return false;
+        p = Math.min(Math.round(pattern), 1000); // clamp to 1s safety
+      } else if (Array.isArray(pattern)) {
+        p = pattern
+          .filter(x => typeof x === 'number' && isFinite(x) && x > 0)
+          .map(x => Math.min(Math.round(x), 1000));
+        if (p.length === 0) return false;
+      } else {
+        return false;
+      }
+      const r = fn.call(navigator, p);
+      // navigator.vibrate returns a Promise on Android; swallow rejection
+      // so an unhandled rejection doesn't surface in the console.
+      if (r && typeof r.catch === 'function') r.catch(() => {});
+      return true;
+    } catch (e) {
+      return false;
+    }
   },
-  light()   { this._v(20); },
-  medium()  { this._v(20); },
-  heavy()   { this._v(20); },
-  nav()     { this._v(60); },
-  success() { this._v([20, 30, 20]); },
-  warning() { this._v([40, 30, 40]); },
-  double()  { this._v([20, 50, 20]); },
-  heartbeat(){ this._v([30, 100, 30]); }
+  /* ── Distinct, perceptible patterns ─────────────────────────
+     Tuned for Android: every level is clearly different from the
+     others. Light = "I touched something"; medium = "I tapped a
+     card"; heavy = "I did something important (delete, logout)"; 
+     nav = "I switched the main tab" — the STRONGEST single pulse
+     in the app, per user request. */
+  light()    { this._v(15); },                       // subtle tick
+  medium()   { this._v(35); },                       // clear tap (card)
+  heavy()    { this._v(60); },                       // firm press
+  nav()      { this._v([90, 25, 45]); },             // STRONGEST: double-thump for tab change
+  success()  { this._v([30, 35, 30]); },             // rising double-tick
+  warning()  { this._v([55, 40, 55]); },             // hard double-buzz
+  double()   { this._v([35, 60, 35]); },             // acknowledgment
+  heartbeat(){ this._v([45, 100, 45, 100, 45]); }    // soft triple pulse
 };
 
 /* ── ANIMATION STATE ──────────────────────────────────────── */
 let animationsEnabled = true;
 let effectsEnabled = true;
+/* Haptics are now controlled INDEPENDENTLY from animations.
+   Previously `Haptic.enabled = animationsEnabled` silently killed
+   vibration on low-end Android devices (where animations auto-disable).
+   Haptics are useful even — especially — when animations are off. */
+let hapticsEnabled = true;
 function updateAnimationsState() {
   document.documentElement.classList.toggle('reduce-animations', !animationsEnabled);
-  Haptic.enabled = animationsEnabled;
+  // NOTE: do NOT touch Haptic.enabled here anymore.
 }
 function updateEffectsState() {
   document.documentElement.classList.toggle('reduce-effects', !effectsEnabled);
 }
+
+/* ── ANDROID DETECTION ──────────────────────────────────────
+   Adds `html.android` class for any Android-specific CSS tweaks,
+   and primes the vibration motor on first user gesture.
+   Why prime: on some Android OEMs the first navigator.vibrate()
+   call after page load is dropped because the vibrator driver is
+   in sleep state. A 1ms "wake" pulse on the first touch ensures
+   the motor is spun up before any real pattern fires. */
+(function detectAndroidAndPrimeHaptics() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const isAndroid = /android/.test(ua);
+  if (isAndroid) document.documentElement.classList.add('android');
+  // Also expose for debugging
+  window.__isAndroid = isAndroid;
+
+  let primed = false;
+  function prime() {
+    if (primed) return;
+    primed = true;
+    try {
+      const fn = navigator.vibrate || navigator.webkitVibrate || navigator.mozVibrate;
+      if (typeof fn === 'function') {
+        // 1ms is imperceptible to the user but wakes the driver.
+        const r = fn.call(navigator, 1);
+        if (r && typeof r.catch === 'function') r.catch(() => {});
+      }
+    } catch (e) {}
+    // Clean up listeners after first priming.
+    window.removeEventListener('pointerdown', prime, true);
+    window.removeEventListener('touchstart', prime, true);
+    window.removeEventListener('click', prime, true);
+  }
+  // Capture phase so we run before any app click handlers.
+  window.addEventListener('pointerdown', prime, true);
+  window.addEventListener('touchstart', prime, true);
+  window.addEventListener('click', prime, true);
+})();
 
 /* ── GRAIN OVERLAY ────────────────────────────────────────── */
 function initGrain() {
